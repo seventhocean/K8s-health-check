@@ -74,7 +74,7 @@ const nodes = computed(() => nodeStore.nodes)
 const loading = computed(() => nodeStore.loading)
 
 async function handleRefresh() {
-  await nodeStore.fetchNodes(true)
+  await nodeStore.fetchNodes()
 }
 
 function viewNode(row: any) {

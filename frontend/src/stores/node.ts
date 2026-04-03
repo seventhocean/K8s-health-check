@@ -7,7 +7,7 @@ export const useNodeStore = defineStore('nodes', () => {
   const loading = ref(false)
   const lastUpdated = ref<Date | null>(null)
 
-  async function fetchNodes(forceRefresh = false) {
+  async function fetchNodes() {
     loading.value = true
     try {
       const data = await nodeApi.getNodes()

@@ -44,7 +44,6 @@
               已连接
             </el-tag>
             <el-tag v-else type="danger" size="small">
-              <el-icon><Disconnected /></el-icon>
               未连接
             </el-tag>
           </div>
@@ -68,7 +67,6 @@ import {
   SetUp,
   Setting,
   Connection,
-  Disconnected,
 } from '@element-plus/icons-vue'
 import Breadcrumb from '../components/Breadcrumb.vue'
 

@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { podApi, type Pod } from '@/api/pod'
 import { clusterApi } from '@/api/cluster'

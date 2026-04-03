@@ -36,8 +36,8 @@ docker-compose up -d  # Start full stack
 
 ### Build & Deploy
 ```bash
-make build    # Build Docker images
-make deploy   # Deploy to K8s (kubectl apply)
+bash build.sh     # Build Docker images (auto-detects buildx)
+make deploy       # Deploy to K8s (kubectl apply)
 ```
 
 ### Testing
@@ -53,6 +53,14 @@ make lint   # Run linters
 - **Database**: MySQL on port 3306, Redis on port 6379
 - **Collector Interval**: Default 15 seconds (configurable via `COLLECTOR_INTERVAL`)
 
+## Chinese Registry Mirrors
+
+Dockerfiles are configured with Chinese mirrors:
+- **pip**: https://pypi.tuna.tsinghua.edu.cn/simple
+- **npm**: https://registry.npmmirror.com
+- **Alpine**: mirrors.aliyun.com
+- **Debian**: mirrors.aliyun.com
+
 ## Extending
 
 **Add new Collector:**
@@ -63,3 +71,8 @@ make lint   # Run linters
 **Add new API:**
 1. Create route file in `app/api/routes/`
 2. Import and include in `app/main.py`
+
+## Build Notes
+
+- `build.sh` auto-detects buildx; falls back to standard build if unavailable
+- Frontend build requires `vue-tsc ^2.0.0` for TypeScript 5.3+ compatibility

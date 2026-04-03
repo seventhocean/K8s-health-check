@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { deploymentApi, type Deployment } from '@/api/deployment'
 import { clusterApi } from '@/api/cluster'
