@@ -6,17 +6,17 @@ echo "=== K8s Health Check - Build Script ==="
 # 检查是否安装了 buildx
 if docker buildx version &> /dev/null; then
     USE_BUILDX=true
-    echo "使用 docker buildx 构建多平台镜像"
+    echo "使用 docker buildx 构建镜像 (linux/amd64)"
 
     # 创建或使用现有 builder
     docker buildx create --use --name k8s-builder 2>/dev/null || docker buildx use k8s-builder
     docker buildx inspect --bootstrap > /dev/null 2>&1
 
-    BUILD_CMD="docker buildx build --platform linux/amd64,linux/arm64 --load"
+    # 只构建 linux/amd64 平台，避免 manifest list 导出错误
+    BUILD_CMD="docker buildx build --platform linux/amd64 --load"
 else
     USE_BUILDX=false
-    echo "未检测到 buildx，使用传统 build 构建当前平台镜像"
-    echo "如需多平台支持，请安装 buildx: https://docs.docker.com/go/buildx/"
+    echo "未检测到 buildx，使用传统 build 构建"
     echo ""
 
     BUILD_CMD="docker build"
