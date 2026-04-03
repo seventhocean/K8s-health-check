@@ -1,5 +1,5 @@
 # Custom MySQL image with initialization scripts
-FROM docker.io/library/mysql:8.0
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/mysql:8.0
 
 # Copy initialization scripts
 COPY deploy/mysql/init.sql /docker-entrypoint-initdb.d/init.sql

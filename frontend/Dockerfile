@@ -1,9 +1,9 @@
-FROM docker.io/library/node:18-alpine AS builder
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/node:18-alpine AS builder
 
 WORKDIR /app
 
 # 使用国内镜像源
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 COPY package*.json ./
 RUN npm install --registry=https://registry.npmmirror.com
@@ -11,7 +11,7 @@ RUN npm install --registry=https://registry.npmmirror.com
 COPY . .
 RUN npm run build
 
-FROM docker.io/library/nginx:alpine
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
