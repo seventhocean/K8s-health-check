@@ -5,7 +5,8 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
 # Copy project files
 COPY pyproject.toml .
