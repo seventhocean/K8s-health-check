@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: k8s-monitor-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: k8s_monitor
+      MYSQL_USER: k8s_monitor
+      MYSQL_PASSWORD: changeme
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./deploy/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - k8s-monitor
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: k8s-monitor-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - k8s-monitor
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: k8s-monitor-backend
+    restart: always
+    env_file:
+      - ./backend/.env
+    environment:
+      MYSQL_HOST: mysql
+      REDIS_HOST: redis
+      K8S_APISERVER_URL: ${K8S_APISERVER_URL:-https://kubernetes.default.svc}
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - k8s-monitor
+    # For in-cluster access, mount kubeconfig or use serviceaccount
+    # volumes:
+    #   - ~/.kube/config:/root/.kube/config
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: k8s-monitor-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - k8s-monitor
+
+networks:
+  k8s-monitor:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:

@@ -1,0 +1,349 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: k8s-monitor
+  labels:
+    name: k8s-monitor
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-monitor-config
+  namespace: k8s-monitor
+data:
+  MYSQL_HOST: "k8s-monitor-mysql"
+  MYSQL_PORT: "3306"
+  MYSQL_DATABASE: "k8s_monitor"
+  MYSQL_USER: "k8s_monitor"
+  REDIS_HOST: "k8s-monitor-redis"
+  REDIS_PORT: "6379"
+  K8S_APISERVER_URL: "https://kubernetes.default.svc"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: k8s-monitor-secret
+  namespace: k8s-monitor
+type: Opaque
+stringData:
+  MYSQL_PASSWORD: "changeme"
+  REDIS_PASSWORD: ""
+---
+# MySQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-monitor-mysql
+  namespace: k8s-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-monitor-mysql
+  template:
+    metadata:
+      labels:
+        app: k8s-monitor-mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "rootpassword"
+            - name: MYSQL_DATABASE
+              value: "k8s_monitor"
+            - name: MYSQL_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: k8s-monitor-config
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: k8s-monitor-secret
+                  key: MYSQL_PASSWORD
+          volumeMounts:
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+            - name: init-scripts
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: k8s-monitor-mysql-pvc
+        - name: init-scripts
+          configMap:
+            name: k8s-monitor-mysql-init
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: k8s-monitor-mysql-pvc
+  namespace: k8s-monitor
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-monitor-mysql-init
+  namespace: k8s-monitor
+data:
+  init.sql: |
+    CREATE DATABASE IF NOT EXISTS k8s_monitor;
+    USE k8s_monitor;
+    GRANT ALL PRIVILEGES ON k8s_monitor.* TO 'k8s_monitor'@'%' IDENTIFIED BY 'changeme';
+    FLUSH PRIVILEGES;
+---
+# MySQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-monitor-mysql
+  namespace: k8s-monitor
+spec:
+  selector:
+    app: k8s-monitor-mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
+---
+# Redis Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-monitor-redis
+  namespace: k8s-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-monitor-redis
+  template:
+    metadata:
+      labels:
+        app: k8s-monitor-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: redis-storage
+              mountPath: /data
+      volumes:
+        - name: redis-storage
+          persistentVolumeClaim:
+            claimName: k8s-monitor-redis-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: k8s-monitor-redis-pvc
+  namespace: k8s-monitor
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-monitor-redis
+  namespace: k8s-monitor
+spec:
+  selector:
+    app: k8s-monitor-redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+  type: ClusterIP
+---
+# Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-monitor-backend
+  namespace: k8s-monitor
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: k8s-monitor-backend
+  template:
+    metadata:
+      labels:
+        app: k8s-monitor-backend
+    spec:
+      serviceAccountName: k8s-monitor-sa
+      containers:
+        - name: backend
+          image: k8s-monitor-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: k8s-monitor-config
+            - secretRef:
+                name: k8s-monitor-secret
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-monitor-backend
+  namespace: k8s-monitor
+spec:
+  selector:
+    app: k8s-monitor-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-monitor-frontend
+  namespace: k8s-monitor
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: k8s-monitor-frontend
+  template:
+    metadata:
+      labels:
+        app: k8s-monitor-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: k8s-monitor-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-monitor-frontend
+  namespace: k8s-monitor
+spec:
+  selector:
+    app: k8s-monitor-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
+  type: NodePort
+---
+# ServiceAccount for K8s API access
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8s-monitor-sa
+  namespace: k8s-monitor
+---
+# ClusterRole for reading cluster resources
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: k8s-monitor-role
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "pods", "namespaces", "services", "events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch"]
+---
+# ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: k8s-monitor-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: k8s-monitor-sa
+    namespace: k8s-monitor
+roleRef:
+  kind: ClusterRole
+  name: k8s-monitor-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Ingress (optional, for external access)
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: k8s-monitor-ingress
+#   namespace: k8s-monitor
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+# spec:
+#   rules:
+#     - host: monitor.example.com
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: k8s-monitor-frontend
+#                 port:
+#                   number: 80
