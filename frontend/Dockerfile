@@ -2,8 +2,11 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# 使用国内镜像源
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
 COPY package*.json ./
-RUN npm install
+RUN npm install --registry=https://registry.npmmirror.com
 
 COPY . .
 RUN npm run build

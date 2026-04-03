@@ -1,6 +1,9 @@
 # Custom MySQL image with initialization scripts
 FROM mysql:8.0
 
+# 使用国内镜像源 (MySQL 官方镜像已经较小，一般不需要替换)
+# COPY deploy/mysql/init.sql /docker-entrypoint-initdb.d/init.sql
+
 # Copy initialization scripts
 COPY deploy/mysql/init.sql /docker-entrypoint-initdb.d/init.sql
 

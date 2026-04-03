@@ -3,21 +3,49 @@ set -e
 
 echo "=== K8s Health Check - Build Script ==="
 
+# 检查是否安装了 buildx
+if ! docker buildx version &> /dev/null; then
+    echo "Installing docker buildx..."
+    docker run --rm --privileged tonistiigi/binfmt --install all
+fi
+
+# 创建或使用现有 builder
+docker buildx create --use --name k8s-builder 2>/dev/null || docker buildx use k8s-builder
+docker buildx inspect --bootstrap > /dev/null 2>&1
+
 # Build backend image
 echo "Building backend image..."
-docker build -t k8s-monitor-backend:latest ./backend
+docker buildx build --platform linux/amd64,linux/arm64 \
+    -t k8s-monitor-backend:latest \
+    -t k8s-monitor-backend:$(date +%Y%m%d) \
+    -f backend/Dockerfile \
+    --load \
+    ./backend
 
 # Build frontend image
 echo "Building frontend image..."
-docker build -t k8s-monitor-frontend:latest ./frontend
+docker buildx build --platform linux/amd64,linux/arm64 \
+    -t k8s-monitor-frontend:latest \
+    -t k8s-monitor-frontend:$(date +%Y%m%d) \
+    -f frontend/Dockerfile \
+    --load \
+    ./frontend
 
 # Build MySQL image (optional, for offline deployment)
 echo "Building MySQL image..."
-docker build -t k8s-monitor-mysql:latest -f deploy/mysql/Dockerfile .
+docker buildx build --platform linux/amd64,linux/arm64 \
+    -t k8s-monitor-mysql:latest \
+    -f deploy/mysql/Dockerfile \
+    --load \
+    .
 
 # Build Redis image (optional, for offline deployment)
 echo "Building Redis image..."
-docker build -t k8s-monitor-redis:latest -f deploy/redis/Dockerfile .
+docker buildx build --platform linux/amd64,linux/arm64 \
+    -t k8s-monitor-redis:latest \
+    -f deploy/redis/Dockerfile \
+    --load \
+    .
 
 echo ""
 echo "=== Build Complete ==="
