@@ -1,4 +1,4 @@
-FROM registry.aliyuncs.com/library/node:18-alpine AS builder
+FROM docker.io/library/node:18-alpine AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ RUN npm install --registry=https://registry.npmmirror.com
 COPY . .
 RUN npm run build
 
-FROM registry.aliyuncs.com/library/nginx:alpine
+FROM docker.io/library/nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf

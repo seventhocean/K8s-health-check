@@ -1,5 +1,5 @@
 # Custom MySQL image with initialization scripts
-FROM registry.aliyuncs.com/library/mysql:8.0
+FROM docker.io/library/mysql:8.0
 
 # Copy initialization scripts
 COPY deploy/mysql/init.sql /docker-entrypoint-initdb.d/init.sql
