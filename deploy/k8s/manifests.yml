@@ -287,7 +287,7 @@ spec:
   ports:
     - port: 80
       targetPort: 80
-      nodePort: 30080
+      nodePort: 30099
   type: NodePort
 ---
 # ServiceAccount for K8s API access
