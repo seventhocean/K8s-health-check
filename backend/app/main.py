@@ -1,5 +1,6 @@
 """FastAPI application entry point"""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket

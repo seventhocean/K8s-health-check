@@ -4,11 +4,18 @@ import redis.asyncio as redis
 from typing import Any, Optional
 import json
 import logging
-from datetime import timedelta
-
+from datetime import timedelta, datetime
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles datetime objects"""
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 class CacheClient:
@@ -58,7 +65,7 @@ class CacheClient:
     ) -> bool:
         """Set value in cache"""
         try:
-            serialized = json.dumps(value)
+            serialized = json.dumps(value, cls=DateTimeEncoder)
             ttl = ttl or settings.REDIS_CACHE_TTL
             return await self.client.setex(key, ttl, serialized)
         except Exception as e:
