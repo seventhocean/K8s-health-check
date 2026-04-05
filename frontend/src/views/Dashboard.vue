@@ -194,8 +194,13 @@ function updateResourceChart() {
 
   const cpuCapacity = (summary.value.resources.total_cpu_capacity_millicores || 0) / 1000
   const cpuAllocatable = (summary.value.resources.total_cpu_allocatable_millicores || 0) / 1000
+  const cpuRequested = (summary.value.resources.total_cpu_requested_millicores || 0) / 1000
+  const cpuAvailable = (summary.value.resources.total_cpu_available_millicores || 0) / 1000
+
   const memoryCapacity = (summary.value.resources.total_memory_capacity_bytes || 0) / (1024 ** 3)
   const memoryAllocatable = (summary.value.resources.total_memory_allocatable_bytes || 0) / (1024 ** 3)
+  const memoryRequested = (summary.value.resources.total_memory_requested_bytes || 0) / (1024 ** 3)
+  const memoryAvailable = (summary.value.resources.total_memory_available_bytes || 0) / (1024 ** 3)
 
   resourceChart.setOption({
     tooltip: {
@@ -205,7 +210,7 @@ function updateResourceChart() {
       },
     },
     legend: {
-      data: ['容量', '可分配'],
+      data: ['容量', '可分配', '已分配', '可用'],
     },
     xAxis: {
       type: 'category',
@@ -224,6 +229,16 @@ function updateResourceChart() {
         name: '可分配',
         type: 'bar',
         data: [cpuAllocatable, memoryAllocatable],
+      },
+      {
+        name: '已分配',
+        type: 'bar',
+        data: [cpuRequested, memoryRequested],
+      },
+      {
+        name: '可用',
+        type: 'bar',
+        data: [cpuAvailable, memoryAvailable],
       },
     ],
   })

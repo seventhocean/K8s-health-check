@@ -49,6 +49,7 @@ class PodCollector(BaseCollector):
                     "image": cs.image,
                     "started": cs.started,
                     "state": self._get_container_state(cs.state),
+                    "reason": cs.state.waiting.reason if cs.state.waiting else (cs.state.terminated.reason if cs.state.terminated else None),
                 })
 
         # Resource requests and limits
@@ -56,6 +57,10 @@ class PodCollector(BaseCollector):
 
         # Get pod phase and conditions
         phase = status.phase
+
+        # Determine actual pod status (handles Terminating, CrashLoopBackOff, etc.)
+        actual_status = self._get_pod_actual_status(phase, metadata.deletion_timestamp, container_statuses)
+
         conditions = {c.type: c.status for c in status.conditions}
 
         return {
@@ -63,7 +68,7 @@ class PodCollector(BaseCollector):
             "namespace": metadata.namespace,
             "labels": metadata.labels or {},
             "annotations": metadata.annotations or {},
-            "phase": phase,
+            "phase": actual_status,  # Use actual status instead of raw phase
             "qos_class": status.qos_class,
             "priority": spec.priority or 0,
             "priority_class_name": spec.priority_class_name,
@@ -83,6 +88,25 @@ class PodCollector(BaseCollector):
             "reason": status.reason,
             "message": status.message,
         }
+
+    def _get_pod_actual_status(self, phase: str, deletion_timestamp, container_statuses: List[Dict]) -> str:
+        """Determine actual pod status considering termination and crash loops"""
+        # Check if pod is terminating
+        if deletion_timestamp:
+            return "Terminating"
+
+        # Check container states for crash loops
+        for cs in container_statuses:
+            reason = cs.get("reason")
+            state = cs.get("state")
+            if reason == "CrashLoopBackOff":
+                return "CrashLoopBackOff"
+            if reason == "OOMKilled":
+                return "OOMKilled"
+            if state == "waiting" and reason in ["ContainerCreating", "ImagePullBackOff", "ErrImagePull"]:
+                return reason
+
+        return phase
 
     def _get_container_state(self, state) -> Dict[str, Any]:
         """Get container state as dict"""

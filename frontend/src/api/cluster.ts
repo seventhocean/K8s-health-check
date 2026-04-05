@@ -19,8 +19,12 @@ export interface ClusterSummary {
   resources: {
     total_cpu_capacity_millicores: number
     total_cpu_allocatable_millicores: number
+    total_cpu_requested_millicores: number
+    total_cpu_available_millicores: number
     total_memory_capacity_bytes: number
     total_memory_allocatable_bytes: number
+    total_memory_requested_bytes: number
+    total_memory_available_bytes: number
   }
 }
 

@@ -135,11 +135,24 @@ class MetricsService:
         deployment_list = deployments.get("deployments", [])
         ready_deployments = sum(1 for d in deployment_list if d.get("is_ready"))
 
-        # Resource totals
+        # Resource totals - Capacity and Allocatable
         total_cpu_capacity = sum(n.get("capacity", {}).get("cpu", 0) for n in node_list)
         total_cpu_allocatable = sum(n.get("allocatable", {}).get("cpu", 0) for n in node_list)
         total_memory_capacity = sum(n.get("capacity", {}).get("memory_bytes", 0) for n in node_list)
         total_memory_allocatable = sum(n.get("allocatable", {}).get("memory_bytes", 0) for n in node_list)
+
+        # Calculate total requested resources from all pods
+        total_cpu_requested = 0
+        total_memory_requested = 0
+        for pod in pod_list:
+            resources = pod.get("resources", {})
+            requests = resources.get("requests", {})
+            total_cpu_requested += requests.get("cpu", 0)
+            total_memory_requested += requests.get("memory", 0)
+
+        # Available = Allocatable - Requested
+        total_cpu_available = max(0, total_cpu_allocatable - total_cpu_requested)
+        total_memory_available = max(0, total_memory_allocatable - total_memory_requested)
 
         return {
             "collected_at": datetime.utcnow().isoformat(),
@@ -160,8 +173,12 @@ class MetricsService:
             "resources": {
                 "total_cpu_capacity_millicores": total_cpu_capacity,
                 "total_cpu_allocatable_millicores": total_cpu_allocatable,
+                "total_cpu_requested_millicores": total_cpu_requested,
+                "total_cpu_available_millicores": total_cpu_available,
                 "total_memory_capacity_bytes": total_memory_capacity,
                 "total_memory_allocatable_bytes": total_memory_allocatable,
+                "total_memory_requested_bytes": total_memory_requested,
+                "total_memory_available_bytes": total_memory_available,
             },
         }
 

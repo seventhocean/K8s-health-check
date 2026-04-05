@@ -28,8 +28,17 @@ class NodeCollector(BaseCollector):
     def _parse_node(self, node) -> Dict[str, Any]:
         """Parse node object into metrics dict"""
         status = node.status
-        capacity = status.capacity
-        allocatable = status.allocatable
+
+        # K8s API returns ResourceList objects, convert to dict properly
+        capacity = {}
+        allocatable = {}
+
+        if status.capacity:
+            for key, val in status.capacity.items():
+                capacity[key] = val
+        if status.allocatable:
+            for key, val in status.allocatable.items():
+                allocatable[key] = val
 
         # Calculate resource usage
         cpu_capacity = self._parse_cpu(capacity.get("cpu", "0"))
