@@ -69,12 +69,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
+# Include routers with /api/v1 prefix
 app.include_router(health.router)
-app.include_router(nodes.router)
-app.include_router(pods.router)
-app.include_router(deployments.router)
-app.include_router(cluster.router)
+app.include_router(nodes.router, prefix="/api/v1")
+app.include_router(pods.router, prefix="/api/v1")
+app.include_router(deployments.router, prefix="/api/v1")
+app.include_router(cluster.router, prefix="/api/v1")
 
 # WebSocket endpoint
 @app.websocket("/ws/metrics")
