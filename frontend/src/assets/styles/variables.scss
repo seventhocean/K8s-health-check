@@ -1,0 +1,67 @@
+// K8s 集群监控管理平台 - 样式变量
+
+// 主题色
+$primary-color: #409EFF;
+$success-color: #67C23A;
+$warning-color: #E6A23C;
+$danger-color: #F56C6C;
+$info-color: #909399;
+
+// 渐变色系
+$gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+$gradient-success: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+$gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+$gradient-info: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+$gradient-danger: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+
+// K8s 主题色
+$k8s-blue: #326CE5;
+$k8s-light-blue: #5B93D3;
+$k8s-dark: #1a1a1a;
+
+// 侧边栏
+$sidebar-bg: #1a1f3a;
+$sidebar-dark-bg: #0d1121;
+$sidebar-text: #a0aec0;
+$sidebar-active-text: #fff;
+$sidebar-active-bg: linear-gradient(90deg, rgba(64, 158, 255, 0.2) 0%, transparent 100%);
+$sidebar-border: rgba(255, 255, 255, 0.1);
+
+// 顶部栏
+$header-bg: #fff;
+$header-height: 60px;
+$header-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+// 卡片
+$card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+$card-hover-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+$card-border-radius: 12px;
+
+// 表格
+$table-header-bg: #fafafa;
+$table-zebra-bg: #f9fafb;
+$table-hover-bg: #f0f7ff;
+$table-border: #ebeef5;
+
+// 字体
+$font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-size-base: 14px;
+$font-size-small: 12px;
+$font-size-large: 16px;
+$font-size-title: 20px;
+$font-size-page-title: 24px;
+
+// 间距
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+
+// 动画
+$transition-base: all 0.3s ease;
+$transition-fast: all 0.2s ease;
+$transition-slow: all 0.5s ease;
+
+// 涟漪效果
+$ripple-color: rgba(64, 158, 255, 0.3);

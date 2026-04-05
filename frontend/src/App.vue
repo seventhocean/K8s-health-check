@@ -12,6 +12,8 @@ const locale = ref(zhCn)
 </script>
 
 <style>
+@import './assets/styles/global.scss';
+
 * {
   margin: 0;
   padding: 0;
