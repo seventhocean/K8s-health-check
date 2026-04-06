@@ -18,7 +18,8 @@ COPY pyproject.toml .
 COPY app/ ./app/
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir -e . && \
+    pip install --no-cache-dir email-validator
 
 # Expose port
 EXPOSE 8000
