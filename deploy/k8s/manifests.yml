@@ -26,6 +26,7 @@ metadata:
   namespace: k8s-monitor
 type: Opaque
 stringData:
+  SECRET_KEY: "pzpxTS_-qoNQYG7DP3jL5-QbVl3TdXiGBb5lf89O3sA"
   MYSQL_PASSWORD: "changeme"
   REDIS_PASSWORD: ""
 ---

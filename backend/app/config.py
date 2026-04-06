@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
 import secrets
+import warnings
 
 
 class Settings(BaseSettings):
@@ -10,22 +11,26 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # Security - SECRET_KEY must be set in production
-    SECRET_KEY: str
+    # Security - SECRET_KEY with auto-generate for missing
+    SECRET_KEY: str = ""
     ALLOWED_ORIGINS: str = ""  # Comma-separated list of allowed CORS origins
 
-    @classmethod
-    def model_validate(cls, obj):
-        # Generate a warning if SECRET_KEY is not set (development only)
-        if not obj.get("SECRET_KEY"):
-            import warnings
+    def __init__(self, **kwargs):
+        # Check if SECRET_KEY is set
+        import os
+        env_secret = os.getenv("SECRET_KEY", "")
+        if not env_secret and not kwargs.get("SECRET_KEY"):
             warnings.warn(
                 "SECRET_KEY not set. A temporary key will be generated. "
-                "This is NOT secure for production. Set SECRET_KEY in your .env file.",
+                "This is NOT secure for production. Set SECRET_KEY in your .env file "
+                "or as environment variable.",
                 UserWarning
             )
-            obj["SECRET_KEY"] = secrets.token_urlsafe(32)
-        return super().model_validate(obj)
+            if not kwargs.get("SECRET_KEY"):
+                kwargs["SECRET_KEY"] = secrets.token_urlsafe(32)
+        elif env_secret and not kwargs.get("SECRET_KEY"):
+            kwargs["SECRET_KEY"] = env_secret
+        super().__init__(**kwargs)
 
     # Kubernetes
     K8S_APISERVER_URL: str = "https://kubernetes.default.svc"
