@@ -115,20 +115,72 @@ make logs-frontend# View frontend logs only
 
 ## Extending
 
-**Add new Collector:**
-1. Extend `app/collectors/base.py::BaseCollector`
-2. Implement `collect()` method returning `Dict[str, Any]`
-3. Register in `MetricsService` (`app/services/metrics_service.py`)
-4. Add corresponding data models in `app/models/metrics.py`
+### Add new K8s Resource Collector (阶段三开发流程)
 
-**Add new API:**
-1. Create route file in `app/api/routes/`
-2. Import and include router in `app/main.py`
+**步骤 1: 数据模型** (`app/models/metrics.py`)
+```python
+class NamespaceMetrics(BaseModel):
+    name: str
+    status: str
+    created_at: str
+    labels: Optional[Dict[str, str]]
+    resource_quota: Optional[Dict[str, Any]]
+```
 
-**Add new frontend view:**
-1. Create Vue component in `frontend/src/views/`
-2. Add route in `frontend/src/router/`
-3. Create Pinia store in `frontend/src/stores/` if needed
+**步骤 2: 收集器** (`app/collectors/`)
+```python
+from app.collectors.base import BaseCollector
+
+class NamespaceCollector(BaseCollector):
+    async def collect(self) -> Dict[str, Any]:
+        # 使用 kubernetes_asyncio client
+        # 返回 {"namespaces": [...], "total": int}
+```
+
+**步骤 3: 注册到 MetricsService** (`app/services/metrics_service.py`)
+- 导入收集器
+- 在 `__init__` 创建实例
+- 在 `collect_all` 中调用
+
+**步骤 4: API 路由** (`app/api/routes/`)
+```python
+from fastapi import APIRouter, Depends
+
+router = APIRouter()
+
+@router.get("/namespaces")
+async def list_namespaces(...):
+    # 从缓存获取或刷新
+```
+
+**步骤 5: 注册路由** (`app/main.py` 和 `app/api/routes/__init__.py`)
+
+**步骤 6: 前端 API** (`frontend/src/api/`)
+```typescript
+export function getNamespaces() {
+  return request({ url: '/api/v1/cluster/namespaces', method: 'get' })
+}
+```
+
+**步骤 7: Pinia Store** (`frontend/src/stores/`)
+
+**步骤 8: 前端视图** (`frontend/src/views/`)
+- 使用 CommonList.vue 作为基础
+- 定义列配置和操作按钮
+
+**步骤 9: 路由** (`frontend/src/router/index.ts`)
+- 大部分资源已在 router 中预注册
+
+### 阶段三：K8s 资源扩展 - 优先级
+
+| 优先级 | 资源 | 状态 | 说明 |
+|--------|------|------|------|
+| P0 | Namespace | ⏳ | 基础资源 |
+| P0 | Service | ⏳ | 核心网络资源 |
+| P1 | ReplicaSet | ⏳ | 前端已有页面 |
+| P1 | Ingress | ⏳ | 入口管理 |
+| P2 | PV/PVC/StorageClass | ⏳ | 存储资源 |
+| P3 | NetworkPolicy | ⏳ | 网络策略 |
 
 ## Build Notes
 

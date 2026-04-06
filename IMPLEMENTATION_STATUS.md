@@ -140,22 +140,43 @@ npm run dev
 
 ## 下一步计划
 
-### 阶段三：K8s 资源扩展
-- [ ] Namespace 收集器和 API
-- [ ] Service 收集器和 API
-- [ ] Ingress 收集器和 API
-- [ ] NetworkPolicy 收集器和 API
-- [ ] PV/PVC/StorageClass 收集器和 API
-- [ ] ReplicaSet 收集器和 API
+### 阶段三：K8s 资源扩展 🔄 进行中
+
+**目标**：为 8 种 K8s 资源添加完整的监控和管理功能
+
+**开发模式**：每个资源遵循相同的开发流程
+```
+1. 数据模型 (models/metrics.py)
+2. 收集器 (collectors/*_collector.py)
+3. 注册到 MetricsService
+4. API 路由 (api/routes/*.py)
+5. 前端 API 客户端 (src/api/*.ts)
+6. Pinia Store (src/stores/*.ts)
+7. 前端视图 (src/views/*.vue)
+```
+
+**优先级和状态**：
+| 优先级 | 资源 | 状态 | 说明 |
+|--------|------|------|------|
+| P0 | Namespace | ⏳ 待开始 | 基础资源，其他资源依赖 |
+| P0 | Service | ⏳ 待开始 | 核心网络资源 |
+| P1 | ReplicaSet | ⏳ 待开始 | 前端页面已创建 |
+| P1 | Ingress | ⏳ 待开始 | 入口管理 |
+| P2 | PV/PVC/StorageClass | ⏳ 待开始 | 前端页面已创建 |
+| P3 | NetworkPolicy | ⏳ 待开始 | 网络策略 |
+
+**预计完成**: 2026-04-14
+
+---
 
 ### 阶段四：监控功能
-- [ ] 资源使用趋势图表
-- [ ] 历史数据存储
+- [ ] 资源使用趋势图表（24h/7d/30d）
+- [ ] 历史数据存储到 MySQL
 - [ ] 资源预测分析
 
 ### 阶段五：Pod 交互
-- [ ] Pod 日志查看
-- [ ] 容器终端（exec）
+- [ ] Pod 日志查看（支持多容器）
+- [ ] 容器终端（WebSocket exec）
 - [ ] Pod 事件流
 
 ### 阶段六：告警系统
@@ -164,7 +185,7 @@ npm run dev
 - [ ] 告警历史记录
 
 ### 阶段七：生产部署
-- [ ] Docker Compose 配置
-- [ ] Kubernetes 部署清单
+- [ ] Docker Compose 完整配置
+- [ ] Kubernetes Helm Chart
 - [ ] 性能优化
 - [ ] 安全加固
