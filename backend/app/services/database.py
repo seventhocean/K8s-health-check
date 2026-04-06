@@ -2,13 +2,23 @@
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool
-from typing import AsyncGenerator
+from sqlalchemy.orm import DeclarativeBase
+from typing import AsyncGenerator, List, Type
 import logging
 
 from app.config import settings
-from app.models.metrics import Base
 
 logger = logging.getLogger(__name__)
+
+
+# Define Base here to avoid circular imports
+class Base(DeclarativeBase):
+    """Base class for all models"""
+    pass
+
+
+# List of models to be imported for table creation
+MODELS: List[Type[Base]] = []
 
 
 class Database:
@@ -38,10 +48,6 @@ class Database:
             expire_on_commit=False,
         )
 
-        # Create tables
-        async with self.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
         logger.info("Database connected")
 
     async def disconnect(self) -> None:
@@ -55,10 +61,11 @@ class Database:
         async with self.async_session_maker() as session:
             yield session
 
-    async def create_tables(self) -> None:
+    async def create_all_tables(self) -> None:
         """Create all tables (useful for initialization)"""
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+        logger.info("All tables created")
 
 
 # Global instance

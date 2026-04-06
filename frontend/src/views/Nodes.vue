@@ -308,7 +308,7 @@ const filteredNodes = computed(() => {
 
   pagination.value.total = result.length
   return result
-}
+})
 
 function getCPUUsagePercent(node: any): number {
   const capacity = parseFloat(node.capacity?.cpu) || 0

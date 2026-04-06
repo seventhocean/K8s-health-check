@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+import secrets
 
 
 class Settings(BaseSettings):
@@ -8,6 +9,9 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     HOST: str = "0.0.0.0"
     PORT: int = 8000
+
+    # Security
+    SECRET_KEY: str = secrets.token_urlsafe(32)  # Auto-generate if not set
 
     # Kubernetes
     K8S_APISERVER_URL: str = "https://kubernetes.default.svc"

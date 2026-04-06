@@ -104,7 +104,7 @@
             </el-badge>
 
             <!-- 用户菜单 -->
-            <el-dropdown class="user-menu">
+            <el-dropdown class="user-menu" @command="handleUserCommand">
               <div class="user-info">
                 <el-avatar :size="36" :src="user.avatar">
                   {{ user.name.charAt(0) }}
@@ -114,15 +114,15 @@
               </div>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item>
+                  <el-dropdown-item command="profile">
                     <el-icon><User /></el-icon>
                     个人中心
                   </el-dropdown-item>
-                  <el-dropdown-item>
+                  <el-dropdown-item command="settings">
                     <el-icon><Setting /></el-icon>
                     个人设置
                   </el-dropdown-item>
-                  <el-dropdown-item divided>
+                  <el-dropdown-item divided command="logout">
                     <el-icon><SwitchButton /></el-icon>
                     退出登录
                   </el-dropdown-item>
@@ -179,7 +179,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { authApi } from '@/api/auth'
 import {
   Platform,
   DataBoard,
@@ -199,6 +201,7 @@ import {
 } from '@element-plus/icons-vue'
 import Breadcrumb from '../components/Breadcrumb.vue'
 
+const router = useRouter()
 const route = useRoute()
 const activeMenu = computed(() => route.path)
 const sidebarCollapse = ref(false)
@@ -219,11 +222,45 @@ function showNotifications() {
   notificationVisible.value = true
 }
 
-onMounted(() => {
+async function handleUserCommand(command: string) {
+  if (command === 'logout') {
+    try {
+      await authApi.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      ElMessage.success('已退出登录')
+      router.push('/login')
+    }
+  } else if (command === 'profile') {
+    ElMessage.info('个人中心功能开发中')
+  } else if (command === 'settings') {
+    router.push('/settings')
+  }
+}
+
+onMounted(async () => {
+  // 加载用户信息
+  const userStr = localStorage.getItem('user')
+  if (userStr) {
+    try {
+      const userData = JSON.parse(userStr)
+      user.value = {
+        name: userData.username || userData.name,
+        email: userData.email,
+        avatar: '',
+      }
+    } catch (e) {
+      console.error('Failed to parse user data:', e)
+    }
+  }
+
   // 检查登录状态
   const token = localStorage.getItem('token')
-  if (!token && route.path !== '/login') {
-    // TODO: 跳转到登录页
+  if (!token) {
+    router.push('/login')
   }
 })
 </script>

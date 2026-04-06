@@ -10,7 +10,7 @@ from app.config import settings
 from app.services.database import database
 from app.services.cache import cache
 from app.services.metrics_service import metrics_service
-from app.api.routes import health, nodes, pods, deployments, cluster
+from app.api.routes import health, nodes, pods, deployments, cluster, auth, users
 from app.api.websocket import websocket_metrics, metrics_updater
 
 # Configure logging
@@ -30,6 +30,7 @@ async def lifespan(app: FastAPI):
 
     # Initialize database
     await database.connect()
+    await database.create_all()
 
     # Initialize cache
     await cache.connect()
@@ -71,6 +72,8 @@ app.add_middleware(
 
 # Include routers with /api/v1 prefix
 app.include_router(health.router)
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
 app.include_router(nodes.router, prefix="/api/v1")
 app.include_router(pods.router, prefix="/api/v1")
 app.include_router(deployments.router, prefix="/api/v1")

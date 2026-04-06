@@ -151,6 +151,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { authApi } from '@/api/auth'
 import {
   Platform,
   User,
@@ -239,15 +240,18 @@ async function handleLogin() {
 
     loading.value = true
     try {
-      // TODO: 调用登录 API
-      // 模拟登录
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await authApi.login({
+        username: loginForm.username,
+        password: loginForm.password,
+      })
 
-      localStorage.setItem('token', 'mock-token-' + Date.now())
+      localStorage.setItem('token', response.access_token)
+      localStorage.setItem('user', JSON.stringify(response.user))
+
       ElMessage.success('登录成功')
       router.push('/')
-    } catch (error) {
-      ElMessage.error('登录失败')
+    } catch (error: any) {
+      ElMessage.error(error.response?.data?.detail || '登录失败')
     } finally {
       loading.value = false
     }
@@ -257,11 +261,21 @@ async function handleLogin() {
 function handleRegister() {
   if (!registerFormRef.value) return
 
-  registerFormRef.value.validate((valid: boolean) => {
+  registerFormRef.value.validate(async (valid: boolean) => {
     if (valid) {
-      // TODO: 调用注册 API
-      ElMessage.success('注册成功，请登录')
-      registerVisible.value = false
+      try {
+        await authApi.register({
+          username: registerForm.username,
+          email: registerForm.email,
+          phone: registerForm.phone,
+          password: registerForm.password,
+          role: 'viewer',
+        })
+        ElMessage.success('注册成功，请登录')
+        registerVisible.value = false
+      } catch (error: any) {
+        ElMessage.error(error.response?.data?.detail || '注册失败')
+      }
     }
   })
 }
@@ -285,7 +299,7 @@ function sendCode() {
 function handleResetPassword() {
   if (!forgotFormRef.value) return
 
-  forgotFormRef.value.validate((valid: boolean) => {
+  forgotFormRef.value.validate(async (valid: boolean) => {
     if (valid) {
       // TODO: 调用重置密码 API
       ElMessage.success('密码重置成功')

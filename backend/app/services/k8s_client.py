@@ -29,23 +29,32 @@ class K8sClient:
 
     def _init_client(self) -> None:
         """Initialize Kubernetes client"""
+        self._ready = False
         try:
             # Try in-cluster config first
             config.load_incluster_config()
             logger.info("Loaded in-cluster Kubernetes configuration")
+            self._ready = True
         except config.ConfigException:
             # Fall back to kubeconfig
             try:
                 config.load_kube_config()
                 logger.info("Loaded kubeconfig")
+                self._ready = True
             except config.ConfigException as e:
                 logger.error(f"Failed to load Kubernetes config: {e}")
-                raise
+                logger.warning("K8s client not initialized - running without K8s access")
+                self.core_v1 = None
+                self.apps_v1 = None
+                self.batch_v1 = None
+                self.custom_metrics = None
+                return
 
         self.core_v1 = client.CoreV1Api()
         self.apps_v1 = client.AppsV1Api()
         self.batch_v1 = client.BatchV1Api()
         self.custom_metrics = None  # Can be initialized if metrics-server is available
+        logger.info("K8s client initialized successfully")
 
     def get_nodes(self):
         """Get all nodes"""
