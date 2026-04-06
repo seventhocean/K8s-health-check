@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
 
     # Initialize database
     await database.connect()
-    await database.create_all()
+    await database.create_all_tables()
 
     # Initialize cache
     await cache.connect()
