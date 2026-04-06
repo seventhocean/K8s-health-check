@@ -28,9 +28,7 @@
 
       <el-table :data="services" stripe>
         <el-table-column label="状态" width="80">
-          <template #default="{ row }">
-            <el-tag type="success">Active</el-tag>
-          </template>
+          <el-tag type="success">Active</el-tag>
         </el-table-column>
         <el-table-column prop="name" label="名称" min-width="200">
           <template #default="{ row }">

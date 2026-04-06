@@ -36,8 +36,12 @@
             <el-tag :type="row.role === 'admin' ? 'danger' : 'primary'">{{ row.roleName }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="最后登录" width="160">{{ row.lastLogin }}</el-table-column>
-        <el-table-column label="创建时间" width="160">{{ row.createdAt }}</el-table-column>
+        <el-table-column label="最后登录" width="160">
+          <template #default="{ row }">{{ row.lastLogin }}</template>
+        </el-table-column>
+        <el-table-column label="创建时间" width="160">
+          <template #default="{ row }">{{ row.createdAt }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="viewDetail(row)">详情</el-button>
@@ -83,7 +87,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { Refresh, Search, Plus } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
 const isEdit = ref(false)
@@ -92,8 +96,6 @@ const users = ref<any[]>([])
 const filters = ref({ keyword: '', role: '' })
 const pagination = ref({ page: 1, pageSize: 10, total: 3 })
 const userForm = ref({ username: '', email: '', phone: '', role: 'viewer', password: '' })
-
-const roleNames: Record<string, string> = { admin: '管理员', developer: '开发者', viewer: '观察者' }
 
 async function fetchData() {
   loading.value = true

@@ -2,12 +2,14 @@
 
 import asyncio
 import json
-from typing import Set
-from fastapi import WebSocket, WebSocketDisconnect
+from typing import Set, Optional
+from fastapi import WebSocket, WebSocketDisconnect, Query
+from jose import JWTError, jwt
 import logging
 
 from app.services.metrics_service import metrics_service
 from app.config import settings
+from app.services.auth_service import decode_token
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +71,39 @@ async def metrics_updater():
             logger.error(f"Metrics updater error: {e}")
 
 
-async def websocket_metrics(websocket: WebSocket) -> None:
-    """WebSocket endpoint for real-time metrics"""
+async def websocket_metrics(
+    websocket: WebSocket,
+    token: Optional[str] = Query(default=None),
+) -> None:
+    """WebSocket endpoint for real-time metrics with authentication"""
+    # Validate token
+    if not token:
+        await websocket.accept()
+        await websocket.send_text(json.dumps({
+            "type": "error",
+            "message": "Authentication required. Please provide a valid token."
+        }))
+        await websocket.close()
+        return
+
+    try:
+        # Decode and validate token
+        payload = decode_token(token)
+        if not payload or not payload.get("sub"):
+            raise ValueError("Invalid token")
+
+        username = payload.get("sub")
+        logger.info(f"WebSocket authenticated: {username}")
+    except (JWTError, ValueError) as e:
+        await websocket.accept()
+        await websocket.send_text(json.dumps({
+            "type": "error",
+            "message": f"Invalid token: {str(e)}"
+        }))
+        await websocket.close()
+        return
+
+    # Accept connection after successful authentication
     await manager.connect(websocket)
     try:
         # Send initial data

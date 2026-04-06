@@ -50,7 +50,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="owner" label="所属 Deployment" width="200" />
-        <el-table-column label="创建时间" width="160">{{ row.createdAt }}</el-table-column>
+        <el-table-column label="创建时间" width="160">
+          <template #default="{ row }">{{ row.createdAt }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="viewDetail(row)">详情</el-button>

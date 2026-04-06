@@ -37,7 +37,9 @@
         <el-table-column prop="resource" label="资源类型" width="120" />
         <el-table-column prop="resourceName" label="资源名称" min-width="180" />
         <el-table-column prop="namespace" label="命名空间" width="120" />
-        <el-table-column label="操作详情" min-width="250" show-overflow-tooltip>{{ row.details }}</el-table-column>
+        <el-table-column label="操作详情" min-width="250" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.details }}</template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }">
             <el-tag :type="row.status === 'success' ? 'success' : 'danger'">{{ row.status === 'success' ? '成功' : '失败' }}</el-tag>

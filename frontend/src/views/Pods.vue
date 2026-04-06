@@ -191,7 +191,9 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="重启次数" width="80">{{ row?.restart_count || 0 }}</el-table-column>
+          <el-table-column label="重启次数" width="80">
+            <template #default="{ row }">{{ row?.restart_count || 0 }}</template>
+          </el-table-column>
         </el-table>
 
         <!-- 标签 -->
@@ -398,7 +400,7 @@ function getTotalRestarts(pod: Pod): number {
   return pod.containers?.statuses?.reduce((sum, cs) => sum + (cs.restart_count || 0), 0) || 0
 }
 
-async function handleBatchAction(command: string) {
+async function handleBatchAction(_command: any) {
   if (selectedPods.value.length === 0) {
     ElMessage.warning('请先选择 Pod')
     return

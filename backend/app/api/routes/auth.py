@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.schemas.auth import UserLogin, Token, UserResponse, UserCreate, UserUpdate
 from app.models.auth import User, AuditLog
@@ -19,13 +21,15 @@ from app.services.auth_service import (
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/login", response_model=Token)
+@limiter.limit("5/minute")  # Rate limit: 5 attempts per minute per IP
 async def login(
+    request: Request,
     login_data: UserLogin,
     db: AsyncSession = Depends(get_db),
-    request: Request = None
 ):
     """User login"""
     # Find user
@@ -33,6 +37,20 @@ async def login(
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(login_data.password, user.hashed_password):
+        # Log failed login attempt
+        if request:
+            audit_log = AuditLog(
+                user_id=user.id if user else None,
+                username=login_data.username,
+                action="login_failed",
+                resource_type="User",
+                resource_name=login_data.username,
+                ip_address=request.client.host if request.client else None,
+                status="failed"
+            )
+            db.add(audit_log)
+            await db.commit()
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -78,10 +96,11 @@ async def login(
 
 
 @router.post("/register", response_model=UserResponse)
+@limiter.limit("3/minute")  # Rate limit: 3 attempts per minute per IP
 async def register(
+    request: Request,
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db),
-    request: Request = None
 ):
     """User registration"""
     # Check if username exists

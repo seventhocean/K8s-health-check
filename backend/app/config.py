@@ -10,8 +10,22 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # Security
-    SECRET_KEY: str = secrets.token_urlsafe(32)  # Auto-generate if not set
+    # Security - SECRET_KEY must be set in production
+    SECRET_KEY: str
+    ALLOWED_ORIGINS: str = ""  # Comma-separated list of allowed CORS origins
+
+    @classmethod
+    def model_validate(cls, obj):
+        # Generate a warning if SECRET_KEY is not set (development only)
+        if not obj.get("SECRET_KEY"):
+            import warnings
+            warnings.warn(
+                "SECRET_KEY not set. A temporary key will be generated. "
+                "This is NOT secure for production. Set SECRET_KEY in your .env file.",
+                UserWarning
+            )
+            obj["SECRET_KEY"] = secrets.token_urlsafe(32)
+        return super().model_validate(obj)
 
     # Kubernetes
     K8S_APISERVER_URL: str = "https://kubernetes.default.svc"

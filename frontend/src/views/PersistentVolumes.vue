@@ -19,7 +19,9 @@
             <el-link type="primary" @click="viewDetail(row)">{{ row.name }}</el-link>
           </template>
         </el-table-column>
-        <el-table-column label="容量" width="100">{{ row.capacity }}</el-table-column>
+        <el-table-column label="容量" width="100">
+          <template #default="{ row }">{{ row.capacity }}</template>
+        </el-table-column>
         <el-table-column prop="storageClass" label="StorageClass" width="150" />
         <el-table-column prop="claim" label="Claim" min-width="200">
           <template #default="{ row }">

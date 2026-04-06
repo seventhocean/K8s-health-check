@@ -15,8 +15,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="provisioner" label="Provisioner" min-width="200" />
-        <el-table-column label="回收策略" width="120">{{ row.reclaimPolicy }}</el-table-column>
-        <el-table-column label="卷绑定模式" width="120">{{ row.volumeBindingMode }}</el-table-column>
+        <el-table-column label="回收策略" width="120">
+          <template #default="{ row }">{{ row.reclaimPolicy }}</template>
+        </el-table-column>
+        <el-table-column label="卷绑定模式" width="120">
+          <template #default="{ row }">{{ row.volumeBindingMode }}</template>
+        </el-table-column>
         <el-table-column label="默认" width="80">
           <template #default="{ row }">
             <el-tag v-if="row.default" type="success">是</el-tag>

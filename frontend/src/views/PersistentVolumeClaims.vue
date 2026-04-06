@@ -31,7 +31,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="namespace" label="命名空间" width="120" />
-        <el-table-column label="容量" width="100">{{ row.capacity }}</el-table-column>
+        <el-table-column label="容量" width="100">
+          <template #default="{ row }">{{ row.capacity }}</template>
+        </el-table-column>
         <el-table-column prop="storageClass" label="StorageClass" width="150" />
         <el-table-column prop="volume" label="Volume" min-width="180">
           <template #default="{ row }">

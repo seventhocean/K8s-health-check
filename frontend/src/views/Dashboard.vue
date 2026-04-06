@@ -286,7 +286,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 import {
   Cpu,
   Box,
@@ -309,7 +308,6 @@ import type { ECharts } from 'echarts'
 import { useClusterStore } from '@/stores/cluster'
 import { clusterApi } from '@/api/cluster'
 
-const router = useRouter()
 const clusterStore = useClusterStore()
 
 const loading = ref(false)

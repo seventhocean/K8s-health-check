@@ -79,7 +79,10 @@ let ws: WebSocket | null = null
 
 function connectWebSocket() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  ws = new WebSocket(`${protocol}//${window.location.host}/ws/metrics`)
+  const token = localStorage.getItem('token')
+  // 在 URL 中添加 token 参数进行认证
+  const wsUrl = `${protocol}//${window.location.host}/ws/metrics${token ? `?token=${token}` : ''}`
+  ws = new WebSocket(wsUrl)
 
   ws.onopen = () => {
     connected.value = true

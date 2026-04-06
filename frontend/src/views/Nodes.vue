@@ -143,7 +143,7 @@
               <el-button link type="primary" @click="viewNodeDetail(row.name)">
                 详情
               </el-button>
-              <el-dropdown trigger="click" @command="(cmd) => handleNodeAction(cmd, row)">
+              <el-dropdown trigger="click" @command="(cmd: any) => handleNodeAction(cmd, row)">
                 <el-button link type="primary">
                   更多
                   <el-icon><ArrowDown /></el-icon>
@@ -250,7 +250,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import {
   Refresh,
   Search,
@@ -263,7 +262,6 @@ import { useNodeStore } from '@/stores/node'
 import { formatCPU, formatBytes } from '@/utils'
 import NodeDetail from '@/components/NodeDetail.vue'
 
-const router = useRouter()
 const nodeStore = useNodeStore()
 
 const loading = ref(false)
@@ -360,7 +358,7 @@ function handleCloseDetail(done: () => void) {
   done()
 }
 
-async function handleNodeAction(command: string, node: any) {
+async function handleNodeAction(command: any, node: any) {
   try {
     if (command === 'cordon' || command === 'uncordon') {
       await ElMessageBox.confirm(

@@ -6,6 +6,7 @@ export interface Pod {
   phase: string
   qos_class: string
   node_name: string
+  node?: string  // Alias for template access
   host_ip: string
   pod_ip: string
   labels: Record<string, string>

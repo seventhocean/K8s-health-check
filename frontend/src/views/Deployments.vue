@@ -130,7 +130,7 @@
             <el-button link type="primary" @click="showScaleDialog(row)">
               扩缩容
             </el-button>
-            <el-dropdown trigger="click" @command="(cmd) => handleDeploymentAction(cmd, row)">
+            <el-dropdown trigger="click" @command="(cmd: any) => handleDeploymentAction(cmd, row)">
               <el-button link type="primary">
                 更多
                 <el-icon><ArrowDown /></el-icon>
@@ -371,7 +371,7 @@ async function handleScale() {
   }
 }
 
-async function handleDeploymentAction(command: string, deployment: any) {
+async function handleDeploymentAction(command: any, deployment: any) {
   try {
     if (command === 'restart') {
       await ElMessageBox.confirm(`确定要重启 ${deployment.name} 吗？`, '确认重启', { type: 'warning' })

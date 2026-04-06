@@ -5,6 +5,11 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.extension import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.services.database import database
@@ -61,14 +66,45 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware
+# CORS middleware - restrict to specific origins in production
+allowed_origins = []
+if settings.DEBUG:
+    # Development: allow localhost variants
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+    ]
+else:
+    # Production: configure via environment variable
+    # Comma-separated list of allowed origins
+    production_origins = getattr(settings, 'ALLOWED_ORIGINS', '')
+    if production_origins:
+        allowed_origins = [origin.strip() for origin in production_origins.split(',')]
+    else:
+        # Default for production if not specified - Frontend same origin
+        allowed_origins = ["http://localhost:80"]
+
+logger.info(f"Configured CORS for origins: {allowed_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
+
+# Add rate limiting middleware
+rate_limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=[],
+    storage_uri="memory://",
+)
+app.state.limiter = rate_limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Include routers with /api/v1 prefix
 app.include_router(health.router)
