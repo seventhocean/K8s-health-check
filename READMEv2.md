@@ -54,6 +54,7 @@
 | MySQL | 8.0+ | 数据持久化 |
 | Python-Jose | 3.3+ | JWT 认证 |
 | Passlib | 1.7+ | 密码加密 |
+| SlowAPI | 0.1.9+ | 速率限制 |
 
 ### 前端
 | 技术 | 版本 | 说明 |
@@ -148,10 +149,14 @@ npm run build
 
 | 方法 | 路径 | 说明 | 需要认证 |
 |------|------|------|----------|
-| POST | `/api/v1/auth/login` | 用户登录 | ❌ |
-| POST | `/api/v1/auth/register` | 用户注册 | ❌ |
+| POST | `/api/v1/auth/login` | 用户登录（速率限制：5 次/分钟） | ❌ |
+| POST | `/api/v1/auth/register` | 用户注册（速率限制：3 次/分钟） | ❌ |
 | GET | `/api/v1/auth/me` | 获取当前用户 | ✅ |
 | POST | `/api/v1/auth/logout` | 用户登出 | ✅ |
+
+**密码要求：**
+- 至少 8 个字符
+- 至少一个大写字母、一个小写字母、一个数字、一个特殊字符
 
 ### 用户管理
 
@@ -175,7 +180,7 @@ npm run build
 | GET | `/api/v1/deployments` | 获取 Deployment 列表 |
 | GET | `/api/v1/cluster/summary` | 获取集群概览 |
 | GET | `/api/v1/cluster/namespaces` | 获取命名空间列表 |
-| WS | `/ws/metrics` | WebSocket 实时推送 |
+| WS | `/ws/metrics` | WebSocket 实时推送（需要 Token 认证） |
 
 ### 健康检查
 
@@ -229,6 +234,14 @@ npm run build
 4. Token 有效期 24 小时
 5. 401 自动跳转登录
 
+### 安全特性
+
+- ✅ **密码强度验证** - 必须包含大小写字母、数字和特殊字符
+- ✅ **速率限制** - 登录 5 次/分钟，注册 3 次/分钟
+- ✅ **CORS 限制** - 仅允许配置的来源访问
+- ✅ **WebSocket 认证** - 实时推送需要有效 Token
+- ✅ **审计日志** - 记录所有用户操作
+
 ### 请求示例
 
 ```bash
@@ -255,8 +268,11 @@ DEBUG=true
 HOST=0.0.0.0
 PORT=8000
 
-# 安全密钥（生产环境请修改）
+# 安全密钥（生产环境必须修改！）
 SECRET_KEY=your-secret-key-change-in-production
+
+# CORS 允许的来源（生产环境配置）
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 
 # Kubernetes 配置
 K8S_APISERVER_URL=https://kubernetes.default.svc
@@ -295,6 +311,15 @@ server: {
   },
 }
 ```
+
+### 生产环境部署前检查
+
+- [ ] 设置强 `SECRET_KEY`（至少 32 字符的随机字符串）
+- [ ] 设置 `DEBUG=false`
+- [ ] 配置 `ALLOWED_ORIGINS` 为实际域名
+- [ ] 修改数据库密码
+- [ ] 启用 HTTPS
+- [ ] 首次登录后立即修改管理员密码
 
 ---
 
@@ -403,6 +428,13 @@ ruff format app/
 ---
 
 ## 📝 更新日志
+
+### v1.1.0 (2026-04-06)
+- 🔒 **安全加固** - 添加密码强度验证、速率限制、WebSocket 认证
+- 🔒 **CORS 限制** - 仅允许配置的来源访问
+- 🔒 **SECRET_KEY 持久化** - 强制设置，防止重启后 Token 失效
+- 🐛 **修复 TypeScript 错误** - 前端编译通过
+- 📚 **完善文档** - 更新安全配置说明
 
 ### v1.0.0 (2026-04-06)
 - ✨ 前端重构 - 全新 K8s 监控 UI
