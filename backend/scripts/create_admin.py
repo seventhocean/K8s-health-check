@@ -36,8 +36,9 @@ async def create_default_user():
             print("Admin user already exists.")
             return
 
-        # Create admin user
-        hashed_password = get_password_hash("admin123")
+        # Create admin user with strong password
+        # Password must: 8+ chars, uppercase, lowercase, digit, special char
+        hashed_password = get_password_hash("Admin@123")
         new_user = User(
             username="admin",
             email="admin@example.com",
@@ -53,7 +54,7 @@ async def create_default_user():
         print("Default admin user created successfully!")
         print("=" * 50)
         print("Username: admin")
-        print("Password: admin123")
+        print("Password: Admin@123")
         print("=" * 50)
         print("Please change the password after first login!")
         print("=" * 50)

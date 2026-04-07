@@ -195,6 +195,30 @@ const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
   }
 }
 
+const validatePassword = (_rule: any, value: string, callback: any) => {
+  if (value.length < 8) {
+    callback(new Error('密码长度不能少于 8 位'))
+    return
+  }
+  if (!/[A-Z]/.test(value)) {
+    callback(new Error('密码必须包含至少一个大写字母'))
+    return
+  }
+  if (!/[a-z]/.test(value)) {
+    callback(new Error('密码必须包含至少一个小写字母'))
+    return
+  }
+  if (!/\d/.test(value)) {
+    callback(new Error('密码必须包含至少一个数字'))
+    return
+  }
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
+    callback(new Error('密码必须包含至少一个特殊字符'))
+    return
+  }
+  callback()
+}
+
 const registerRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   email: [
@@ -204,7 +228,7 @@ const registerRules = {
   phone: [{ pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于 6 位', trigger: 'blur' },
+    { validator: validatePassword, trigger: 'blur' },
   ],
   confirmPassword: [{ required: true, validator: validateConfirmPassword, trigger: 'blur' }],
 }
