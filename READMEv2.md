@@ -470,3 +470,4 @@ MIT License
 ## 📞 联系方式
 
 如有问题或建议，请提交 Issue 或联系开发团队。
+claude --resume bbcd838b-db15-4a17-a30a-aa120ed73a36

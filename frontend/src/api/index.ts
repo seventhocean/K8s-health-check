@@ -25,10 +25,14 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    // 401 未授权，跳转到登录页
+    // 401 未授权，清除 token 并跳转到登录页
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
-      window.location.href = '/login'
+      localStorage.removeItem('user')
+      // 只在不在登录页时才跳转，避免无限重定向
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
     }
     console.error('API Error:', error)
     return Promise.reject(error)

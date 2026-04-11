@@ -12,7 +12,7 @@ from sqlalchemy import select
 
 from app.config import settings
 from app.models.auth import User
-from app.services.auth_service import get_password_hash
+import bcrypt
 
 
 async def create_default_user():
@@ -38,7 +38,10 @@ async def create_default_user():
 
         # Create admin user with strong password
         # Password must: 8+ chars, uppercase, lowercase, digit, special char
-        hashed_password = get_password_hash("Admin@123")
+        hashed_password = bcrypt.hashpw(
+            "Admin@123".encode("utf-8"),
+            bcrypt.gensalt(rounds=12),
+        ).decode("utf-8")
         new_user = User(
             username="admin",
             email="admin@example.com",
