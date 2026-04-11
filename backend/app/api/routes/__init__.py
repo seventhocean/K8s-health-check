@@ -1,6 +1,6 @@
 """Routes module"""
 
-from app.api.routes import health, nodes, pods, deployments, cluster, auth, users
+from app.api.routes import health, nodes, pods, deployments, cluster, auth, users, namespaces, services
 
 __all__ = [
     "health",
@@ -10,4 +10,6 @@ __all__ = [
     "cluster",
     "auth",
     "users",
+    "namespaces",
+    "services",
 ]

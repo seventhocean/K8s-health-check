@@ -7,6 +7,8 @@ import logging
 from app.collectors.node_collector import NodeCollector
 from app.collectors.pod_collector import PodCollector
 from app.collectors.deployment_collector import DeploymentCollector
+from app.collectors.namespace_collector import NamespaceCollector
+from app.collectors.service_collector import ServiceCollector
 from app.services.cache import cache
 from app.services.database import database
 from app.models.metrics import (
@@ -28,6 +30,8 @@ class MetricsService:
         self.node_collector = NodeCollector()
         self.pod_collector = PodCollector()
         self.deployment_collector = DeploymentCollector()
+        self.namespace_collector = NamespaceCollector()
+        self.service_collector = ServiceCollector()
 
     async def collect_all(self) -> Dict[str, Any]:
         """Collect all metrics and store in cache"""
@@ -51,6 +55,16 @@ class MetricsService:
         deployment_data = await self.deployment_collector.run()
         results["deployments"] = deployment_data
         await cache.set(cache.deployments_key(), deployment_data)
+
+        # Collect namespace metrics
+        namespace_data = await self.namespace_collector.run()
+        results["namespaces"] = namespace_data
+        await cache.set(cache.namespaces_key(), namespace_data)
+
+        # Collect service metrics
+        service_data = await self.service_collector.run()
+        results["services"] = service_data
+        await cache.set(cache.services_key(), service_data)
 
         # Create and cache cluster summary
         summary = self._create_summary(results)
@@ -112,6 +126,32 @@ class MetricsService:
                 d for d in data.get("deployments", []) if d.get("namespace") == namespace
             ]
             return {"deployments": filtered, "total": len(filtered)}
+        return data
+
+    async def get_namespaces(
+        self, force_refresh: bool = False
+    ) -> Optional[Dict[str, Any]]:
+        """Get namespace data"""
+        if force_refresh:
+            await cache.delete(cache.namespaces_key())
+            await self.collect_all()
+        return await cache.get(cache.namespaces_key())
+
+    async def get_services(
+        self, namespace: Optional[str] = None, force_refresh: bool = False
+    ) -> Optional[Dict[str, Any]]:
+        """Get service data"""
+        if force_refresh:
+            await cache.delete(cache.services_key())
+            await self.collect_all()
+        data = await cache.get(cache.services_key())
+        if not data:
+            return None
+        if namespace:
+            filtered = [
+                s for s in data.get("services", []) if s.get("namespace") == namespace
+            ]
+            return {"services": filtered, "total": len(filtered)}
         return data
 
     def _create_summary(self, metrics: Dict[str, Any]) -> Dict[str, Any]:

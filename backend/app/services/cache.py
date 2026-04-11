@@ -121,6 +121,14 @@ class CacheClient:
         return "deployments:all"
 
     @staticmethod
+    def namespaces_key() -> str:
+        return "namespaces:all"
+
+    @staticmethod
+    def services_key() -> str:
+        return "services:all"
+
+    @staticmethod
     def cluster_summary_key() -> str:
         return "cluster:summary"
 

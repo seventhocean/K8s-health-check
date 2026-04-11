@@ -74,21 +74,29 @@
 import { ref, onMounted } from 'vue'
 import { Refresh, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { namespaceApi } from '@/api/namespace'
 
 const loading = ref(false)
 const createVisible = ref(false)
 const createForm = ref({ name: '', quotas: [] })
+
 const namespaces = ref<any[]>([])
 
 async function fetchData() {
   loading.value = true
   try {
-    namespaces.value = [
-      { name: 'default', status: 'Active', quota: null, cpuUsage: '500m', memoryUsage: '512Mi', podCount: 12, createdAt: '2024-01-01' },
-      { name: 'kube-system', status: 'Active', quota: null, cpuUsage: '1000m', memoryUsage: '1Gi', podCount: 25, createdAt: '2024-01-01' },
-      { name: 'monitoring', status: 'Active', quota: { cpu: '4', memory: '8Gi' }, cpuUsage: '2', memoryUsage: '4Gi', podCount: 8, createdAt: '2024-01-02' },
-      { name: 'production', status: 'Active', quota: { cpu: '16', memory: '32Gi' }, cpuUsage: '12', memoryUsage: '24Gi', podCount: 45, createdAt: '2024-01-03' },
-    ]
+    const data = await namespaceApi.getNamespaces()
+    namespaces.value = (data.namespaces || []).map(ns => ({
+      name: ns.name,
+      status: ns.status,
+      quota: null,
+      cpuUsage: '0',
+      memoryUsage: '0',
+      podCount: 0,
+      createdAt: ns.created_at ? new Date(ns.created_at).toLocaleDateString() : '-',
+    }))
+  } catch (error) {
+    ElMessage.error('获取命名空间列表失败')
   } finally {
     loading.value = false
   }

@@ -15,7 +15,7 @@
             <template #prefix><el-icon><Search /></el-icon></template>
           </el-input>
           <el-select v-model="filters.namespace" placeholder="命名空间" clearable style="width: 160px">
-            <el-option v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
+            <el-option v-for="ns in namespaceStore.namespaces" :key="ns.name" :label="ns.name" :value="ns.name" />
           </el-select>
           <el-select v-model="filters.type" placeholder="类型" clearable style="width: 140px">
             <el-option label="ClusterIP" value="ClusterIP" />
@@ -28,7 +28,9 @@
 
       <el-table :data="services" stripe>
         <el-table-column label="状态" width="80">
-          <el-tag type="success">Active</el-tag>
+          <template #default>
+            <el-tag type="success">Active</el-tag>
+          </template>
         </el-table-column>
         <el-table-column prop="name" label="名称" min-width="200">
           <template #default="{ row }">
@@ -72,19 +74,30 @@
 import { ref, onMounted } from 'vue'
 import { Refresh, Search, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { serviceApi } from '@/api/service'
+import { useNamespaceStore } from '@/stores/namespace'
 
+const namespaceStore = useNamespaceStore()
 const loading = ref(false)
-const namespaces = ref(['default', 'kube-system', 'monitoring', 'production'])
 const services = ref<any[]>([])
 const filters = ref({ keyword: '', namespace: '', type: '' })
 
 async function fetchData() {
   loading.value = true
   try {
-    services.value = [
-      { name: 'kubernetes', namespace: 'default', type: 'ClusterIP', clusterIP: '10.96.0.1', ports: [{ port: 443, targetPort: 443, protocol: 'TCP' }], selector: {} },
-      { name: 'nginx', namespace: 'default', type: 'NodePort', clusterIP: '10.96.100.1', ports: [{ port: 80, targetPort: 80, protocol: 'TCP', nodePort: 30080 }], selector: { app: 'nginx' } },
-    ]
+    const data = await serviceApi.getServices(filters.value.namespace || undefined)
+    services.value = (data.services || []).map(svc => ({
+      name: svc.name,
+      namespace: svc.namespace,
+      type: svc.type,
+      clusterIP: svc.cluster_ip,
+      externalIP: svc.external_ip,
+      ports: svc.ports || [],
+      selector: svc.selector || {},
+      createdAt: svc.created_at,
+    }))
+  } catch (error) {
+    ElMessage.error('获取 Service 列表失败')
   } finally {
     loading.value = false
   }
@@ -98,7 +111,10 @@ function handleDelete(row: any) {
 }
 function showCreate() { ElMessage.info('创建 Service 功能开发中') }
 
-onMounted(() => { fetchData() })
+onMounted(async () => {
+  await namespaceStore.fetchNamespaces()
+  fetchData()
+})
 </script>
 
 <style scoped lang="scss">

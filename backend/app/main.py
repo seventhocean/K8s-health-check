@@ -15,7 +15,7 @@ from app.config import settings
 from app.services.database import database
 from app.services.cache import cache
 from app.services.metrics_service import metrics_service
-from app.api.routes import health, nodes, pods, deployments, cluster, auth, users
+from app.api.routes import health, nodes, pods, deployments, cluster, auth, users, namespaces, services
 from app.api.websocket import websocket_metrics, metrics_updater
 
 # Configure logging
@@ -114,6 +114,8 @@ app.include_router(nodes.router, prefix="/api/v1")
 app.include_router(pods.router, prefix="/api/v1")
 app.include_router(deployments.router, prefix="/api/v1")
 app.include_router(cluster.router, prefix="/api/v1")
+app.include_router(namespaces.router, prefix="/api/v1")
+app.include_router(services.router, prefix="/api/v1")
 
 # WebSocket endpoint
 @app.websocket("/ws/metrics")

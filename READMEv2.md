@@ -7,12 +7,14 @@
 - [功能特性](#-功能特性)
 - [技术栈](#-技术栈)
 - [快速开始](#-快速开始)
+- [K3s 本地部署](#k3s-本地部署)
 - [API 接口](#-api-接口)
 - [前端页面](#-前端页面)
 - [用户认证](#-用户认证)
 - [配置文件](#-配置文件)
 - [部署指南](#-部署指南)
 - [开发指南](#-开发指南)
+- [项目进度](#-项目进度)
 
 ---
 
@@ -53,7 +55,7 @@
 | Redis | 5.0+ | 缓存层 |
 | MySQL | 8.0+ | 数据持久化 |
 | Python-Jose | 3.3+ | JWT 认证 |
-| Passlib | 1.7+ | 密码加密 |
+| bcrypt | 4.0+ | 密码加密 |
 | SlowAPI | 0.1.9+ | 速率限制 |
 
 ### 前端
@@ -143,6 +145,79 @@ npm run build
 
 ---
 
+## 🐳 K3s 本地部署
+
+### 前置要求
+- K3s 已安装并运行
+- 已安装 nerdctl 工具（或使用 K3s 内置的 crictl/ctr）
+
+### 1. 构建镜像
+```bash
+bash build.sh
+```
+
+### 2. 导出镜像为 tar
+```bash
+docker save k8s-monitor-backend:latest -o k8s-monitor-backend.tar
+docker save k8s-monitor-frontend:latest -o k8s-monitor-frontend.tar
+docker save mysql:8.0 -o mysql-8.0.tar
+docker save redis:7-alpine -o redis-7-alpine.tar
+```
+
+### 3. 导入到 K3s containerd
+```bash
+# 使用 nerdctl（已设置别名）
+sudo nerdctl load -i k8s-monitor-backend.tar
+sudo nerdctl load -i k8s-monitor-frontend.tar
+sudo nerdctl load -i mysql-8.0.tar
+sudo nerdctl load -i redis-7-alpine.tar
+
+# 如果 mysql/redis 使用国内镜像名，需要 tag
+sudo nerdctl tag swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/mysql:8.0 mysql:8.0
+sudo nerdctl tag swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/redis:7-alpine redis:7-alpine
+```
+
+### 4. 部署到 K3s
+```bash
+kubectl apply -f deploy/k8s/manifests.yml
+```
+
+### 5. 创建默认管理员
+```bash
+# 直接在 MySQL 容器中创建
+kubectl exec -n k8s-monitor deployment/k8s-monitor-mysql -- mysql -u root -prootpassword k8s_monitor -e "
+INSERT INTO users (username, email, phone, hashed_password, role, is_active, created_at)
+VALUES ('admin', 'admin@example.com', '', '<bcrypt-hashed-password>', 'admin', 1, NOW());
+"
+```
+
+### 6. 访问服务
+```bash
+# 查看 NodePort
+kubectl get svc -n k8s-monitor k8s-monitor-frontend
+# 访问 http://<节点IP>:30099
+```
+
+### 常用命令
+```bash
+# nerdctl 别名（已配置到 ~/.bashrc）
+alias nerdctl='sudo nerdctl --namespace k8s.io --address /run/k3s/containerd/containerd.sock'
+
+# 查看所有镜像
+sudo nerdctl images
+
+# 查看 Pod 状态
+kubectl get pods -n k8s-monitor
+
+# 查看后端日志
+kubectl logs -n k8s-monitor deployment/k8s-monitor-backend --tail=100
+
+# 重新部署（更新镜像后）
+kubectl rollout restart deployment/k8s-monitor-backend -n k8s-monitor
+```
+
+---
+
 ## 📡 API 接口
 
 ### 认证接口
@@ -180,6 +255,10 @@ npm run build
 | GET | `/api/v1/deployments` | 获取 Deployment 列表 |
 | GET | `/api/v1/cluster/summary` | 获取集群概览 |
 | GET | `/api/v1/cluster/namespaces` | 获取命名空间列表 |
+| GET | `/api/v1/namespaces` | 获取命名空间列表（完整信息） |
+| GET | `/api/v1/namespaces/{name}` | 获取单个命名空间详情 |
+| GET | `/api/v1/services` | 获取 Service 列表 |
+| GET | `/api/v1/services/{namespace}/{name}` | 获取单个 Service 详情 |
 | WS | `/ws/metrics` | WebSocket 实时推送（需要 Token 认证） |
 
 ### 健康检查
@@ -429,6 +508,20 @@ ruff format app/
 
 ## 📝 更新日志
 
+### v1.3.0 (2026-04-11) - Phase 1
+- 🚀 **Namespace 资源监控** - 新增 NamespaceCollector，GET /namespaces API
+- 🚀 **Service 资源监控** - 新增 ServiceCollector，GET /services API
+- 🚀 **前端 Namespace 页面** - 替换 mock 数据，显示真实命名空间列表
+- 🚀 **前端 Service 页面** - 替换 mock 数据，支持 namespace 下拉过滤
+- 🚀 **Pinia Stores** - 新增 namespace/service store 管理状态
+- 🔧 **修复 V1ServiceSpec 属性名错误** - external_i_ps 访问修复
+### v1.2.0 (2026-04-11)
+- 🔧 **修复密码验证崩溃** - passlib + bcrypt 5.0 不兼容，改用 bcrypt 原生库
+- 🔧 **修复登录无限重定向** - 401 拦截器添加登录页路径判断
+- 🔧 **创建默认管理员** - 手动插入 admin 用户
+- 🚀 **支持 K3s 本地部署** - nerdctl 导入镜像到 containerd
+- 📚 **更新 README** - 添加 K3s 部署指南、项目进度、技术栈更新
+
 ### v1.1.0 (2026-04-06)
 - 🔒 **安全加固** - 添加密码强度验证、速率限制、WebSocket 认证
 - 🔒 **CORS 限制** - 仅允许配置的来源访问
@@ -448,6 +541,94 @@ ruff format app/
 - 初始版本发布
 - 基础节点/Pod/Deployment 监控
 - 集群概览功能
+
+---
+
+## 📊 项目进度
+
+### 当前状态 (2026-04-11)
+
+| 模块 | 后端 API | 前端页面 | 状态 |
+|------|----------|----------|------|
+| 认证系统 (登录/注册) | ✅ | ✅ | 已完成 |
+| 用户管理 | ✅ | ✅ 框架完成 | 待完善交互 |
+| 操作审计 | ✅ | ✅ 框架完成 | 待完善筛选/导出 |
+| 系统设置 | ❌ | ✅ 框架完成 | 待开发后端 API |
+| 集群概览 (Dashboard) | ✅ | ✅ | 已完成 |
+| 节点管理 | ✅ | ✅ | 已完成 |
+| Pod 管理 | ✅ | ✅ | 已完成 |
+| Deployment 管理 | ✅ | ✅ | 已完成 |
+| Namespace | ✅ | ✅ | 已完成 |
+| Service | ✅ | ✅ | 已完成 |
+| ReplicaSet | ❌ | ✅ 框架完成 | 待开发收集器 + API |
+| Ingress | ❌ | ✅ 框架完成 | 待开发收集器 + API |
+| PV/PVC/StorageClass | ❌ | ✅ 框架完成 | 待开发收集器 + API |
+| NetworkPolicy | ❌ | ✅ 框架完成 | 待开发收集器 + API |
+
+### 已修复问题
+- ✅ 登录密码验证失败 (passlib + bcrypt 5.0 不兼容) → 改用 bcrypt 原生库
+- ✅ 登录无限重定向 (401 拦截器在登录页也触发跳转) → 添加路径判断
+- ✅ 默认管理员用户未创建 → 手动插入
+- ✅ 密码哈希超过 72 字节崩溃 → 限制长度 + 改用 bcrypt
+- ✅ V1ServiceSpec 属性名错误 (`external_ips` → `external_i_ps`) → 使用 `getattr` 安全访问
+
+### 待解决问题
+- 🔲 K3s 本地部署 `imagePullPolicy` 为 `IfNotPresent`，更新镜像需手动清理旧镜像
+- 🔲 MySQL 启动依赖 — 后端可能先于 MySQL 启动导致连接失败
+- 🔲 部分前端页面仅有 UI 框架，缺少完整后端 API 支撑
+
+### 后续开发阶段规划
+
+项目按优先级分为 4 个阶段，每个阶段完成后端 + 前端联调：
+
+#### Phase 1: Namespace + Service（✅ 已完成）
+- ✅ 后端：`NamespaceCollector`、`ServiceCollector` 收集器
+- ✅ 后端：`GET /namespaces`、`GET /services` API 路由
+- ✅ 后端：缓存 key 支持 + `MetricsService` 注册
+- ✅ 前端：API 客户端 + Pinia Store
+- ✅ 前端：Namespaces/Services 页面替换真实数据
+
+#### Phase 2: ReplicaSet + Ingress + Audit/Users 联动（待开发）
+- 后端：ReplicaSet/Ingress 收集器（需初始化 `NetworkingV1Api`）
+- 后端：`GET /replicasets`、`GET /ingresses` API 路由
+- 前端：ReplicaSets/Ingress 页面绑定真实数据
+- 前端：Audit 页面绑定 `userApi.getAuditLogs()`，完善筛选/分页/导出
+- 前端：Users 页面绑定 `userApi` CRUD，完善创建/编辑/禁用/删除
+
+#### Phase 3: PV + PVC + StorageClass（待开发）
+- 后端：PV/PVC/StorageClass 收集器（需初始化 `StorageV1Api`）
+- 后端：`GET /pvs`、`GET /pvcs`、`GET /storageclasses` API 路由
+- 前端：三个存储页面绑定真实数据
+
+#### Phase 4: NetworkPolicy + 系统设置后端（待开发）
+- 后端：NetworkPolicy 收集器（复用 `NetworkingV1Api`）
+- 后端：Settings 模型 + CRUD API（key-value 配置表）
+- 前端：Settings 从 localStorage 改为 API 持久化
+
+#### 全局事项（贯穿所有阶段）
+1. **K8s Client 初始化** — 每个新 API group 需在 `_init_client()` 初始化对应 client
+2. **Cluster Summary 增强** — 每个阶段完成后更新 `/cluster/summary` 返回新增资源计数
+3. **Namespace 下拉框** — 所有页面的 namespace 过滤器从 namespace store 获取
+4. **错误处理** — 收集器需捕获 K8s API 不可用时的异常，返回空数据而非崩溃
+
+#### 标准开发流程（每个资源类型）
+```
+后端: k8s_client → collector → metrics_service → cache → api route → main.py
+前端: api/*.ts → stores/*.ts → views/*.vue
+```
+
+### 待解决问题
+- 🔲 K3s 本地部署 `imagePullPolicy` 为 `IfNotPresent`，更新镜像需手动清理旧镜像
+- 🔲 MySQL 启动依赖 — 后端可能先于 MySQL 启动导致连接失败
+- 🔲 部分前端页面仅有 UI 框架，缺少完整后端 API 支撑
+
+### 后续优先级
+| 优先级 | 任务 | 说明 |
+|--------|------|------|
+| P0 | Phase 2: ReplicaSet + Ingress + Audit/Users | 完善资源监控 + 已有后端 API 的前端联动 |
+| P1 | Phase 3: PV + PVC + StorageClass | 存储资源监控 |
+| P2 | Phase 4: NetworkPolicy + 系统设置后端 | 网络策略 + 配置持久化 |
+| P2 | 优化部署流程 | imagePullPolicy 改为 Never，添加 InitContainer |
 
 ---
 
